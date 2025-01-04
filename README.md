@@ -21,4 +21,4 @@ Este projeto apresenta um teste automatizado de busca para o site [Loja Relva Ve
 
 1. Clone este repositório:
    ```bash
-   git clone https://github.com/seu-usuario/qa-portfolio.git
+   git clone https://github.com/l-mizuta/qa-example.git
