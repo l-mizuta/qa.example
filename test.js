@@ -1,57 +1,59 @@
 const { Builder, By, Key, until } = require('selenium-webdriver');
 
-async function driver() {
-  let driver = await new Builder().forBrowser('chrome').build();
+async function loadHomePage(driver) {
+  await driver.get('https://www.lojarelvaverde.com.br/');
+  console.log('Página carregada');
+}
 
-  try {
-    await driver.get('https://www.lojarelvaverde.com.br/');
-    console.log('Página carregada');
-
-    // Espera até que o ícone de busca esteja localizado e visível
-    let searchIcon = await driver.wait(until.elementLocated(By.css('[data-icon="search"]')), 10000);
-
-    // Verifica se o ícone de busca foi encontrado
-    if (searchIcon) {
+async function locateSearchIcon(driver) {
+  let searchIcon = await driver.wait(until.elementLocated(By.css('[data-icon="search"]')), 10000);
+  if (searchIcon) {
     console.log('Ícone de busca encontrado');
     await searchIcon.click();
     console.log('Ícone de busca clicado');
+  } else {
+    throw new Error('Ícone de busca não encontrado');
   }
-    else {
-    console.error('Ícone de busca não encontrado');
-  }    
+}
 
-    // Localiza a barra de busca pelo ID
-    let searchBox = await driver.wait(until.elementLocated(By.css('#keywords')), 10000);
-    console.log('Barra de busca localizada');
+async function performSearch(driver, searchTerm) {
+  let searchBox = await driver.wait(until.elementLocated(By.css('#keywords')), 10000);
+  console.log('Barra de busca localizada');
+  await searchBox.sendKeys(searchTerm, Key.RETURN);
+  console.log(`Texto "${searchTerm}" enviado para a barra de busca`);
+}
 
-    // Envia o texto "Geladeira" para a barra de busca e pressiona ENTER
-    await searchBox.sendKeys('aveia', Key.RETURN);
-    console.log('Texto enviado para a barra de busca');
+async function validateSearchResults(driver) {
+  await driver.wait(until.elementLocated(By.css('.collection-grid')), 5000);
+  console.log('Resultados da busca carregados');
 
-    // Aguarda os resultados da busca aparecerem
-    await driver.wait(until.elementLocated(By.css('.collection-grid')), 5000);
-    console.log('Resultados da busca carregados');
+  let results = await driver.findElements(By.css('.collection-grid .collection-grid-card'));
+  console.log("Quantidade de itens encontrados: " + results.length);
 
-    // Localiza os resultados da busca (results.length ou número)
-    let results = await driver.findElements(By.css('.collection-grid .collection-grid-card'));
-    console.log("Quantidade de itens encontrados: " + results.length);
-    for (let i = 0; i < 3; i++) {
-      let priceElement = await results[i].findElement(By.css(".price"));
-      let price = await priceElement.getText();
-      console.log(i + ": " + price);
+  // Exibe os preços dos primeiros 3 itens, caso existam
+  for (let i = 0; i < Math.min(3, results.length); i++) {
+    let priceElement = await results[i].findElement(By.css(".price"));
+    let price = await priceElement.getText();
+    console.log(i + ": " + price);
   }
+}
 
-    // Adiciona um atraso de 5 segundos para observar o comportamento
+async function main() {
+  let driver = await new Builder().forBrowser('chrome').build();
+
+  try {
+    await loadHomePage(driver);
+    await locateSearchIcon(driver);
+    await performSearch(driver, 'aveia');
+    await validateSearchResults(driver);
+
+    // Adiciona um atraso de 5 segundos para observação
     await new Promise(resolve => setTimeout(resolve, 5000));
-  } 
-  
-  catch (error) {
+  } catch (error) {
     console.error('Erro durante a execução do teste:', error);
-  } 
-  
-  finally {
+  } finally {
     await driver.quit();
   }
 }
 
-driver();
+main();

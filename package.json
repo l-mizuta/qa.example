@@ -1,6 +1,16 @@
 {
   "dependencies": {
     "chromedriver": "^126.0.4",
-    "selenium-webdriver": "^4.22.0"
-  }
+    "selenium-webdriver": "^4.27.0"
+  },
+  "name": "qa.example",
+  "version": "1.0.0",
+  "description": "Este projeto apresenta um teste automatizado de busca para o site [Loja Relva Verde](https://www.lojarelvaverde.com.br/), utilizando Selenium e Node.js. O teste verifica a funcionalidade de busca no site, incluindo localização do ícone de busca, envio de termos de pesquisa e validação dos resultados exibidos.",
+  "main": "test copy.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
