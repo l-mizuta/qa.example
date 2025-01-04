@@ -1,59 +1,73 @@
 const { Builder, By, Key, until } = require('selenium-webdriver');
 
-async function loadHomePage(driver) {
-  await driver.get('https://www.lojarelvaverde.com.br/');
-  console.log('Página carregada');
-}
+async function main() {
+  const driver = await new Builder().forBrowser('chrome').build();
 
-async function locateSearchIcon(driver) {
-  let searchIcon = await driver.wait(until.elementLocated(By.css('[data-icon="search"]')), 10000);
-  if (searchIcon) {
+  try {
+    // Acessa o site
+    await driver.get('https://www.lojarelvaverde.com.br/');
+    console.log('Página carregada');
+
+    // Localiza o ícone de busca
+    const searchIcon = await driver.wait(
+      until.elementLocated(By.css('[data-icon="search"]')),
+      10000
+    );
     console.log('Ícone de busca encontrado');
     await searchIcon.click();
     console.log('Ícone de busca clicado');
-  } else {
-    throw new Error('Ícone de busca não encontrado');
-  }
-}
 
-async function performSearch(driver, searchTerm) {
-  let searchBox = await driver.wait(until.elementLocated(By.css('#keywords')), 10000);
-  console.log('Barra de busca localizada');
-  await searchBox.sendKeys(searchTerm, Key.RETURN);
-  console.log(`Texto "${searchTerm}" enviado para a barra de busca`);
-}
+    // Localiza a barra de busca e realiza a busca por "aveia"
+    const searchBox = await driver.wait(
+      until.elementLocated(By.css('#keywords')),
+      10000
+    );
+    console.log('Barra de busca localizada');
+    await searchBox.sendKeys('aveia', Key.RETURN);
+    console.log('Texto enviado para a barra de busca');
 
-async function validateSearchResults(driver) {
-  await driver.wait(until.elementLocated(By.css('.collection-grid')), 5000);
-  console.log('Resultados da busca carregados');
+    // Aguarda o carregamento dos resultados
+    await driver.wait(
+      until.elementLocated(By.css('.collection-grid')),
+      5000
+    );
+    console.log('Resultados da busca carregados');
 
-  let results = await driver.findElements(By.css('.collection-grid .collection-grid-card'));
-  console.log("Quantidade de itens encontrados: " + results.length);
+    // Localiza os resultados
+    const results = await driver.findElements(By.css('.collection-grid .collection-grid-card'));
+    console.log(`Quantidade de itens encontrados: ${results.length}`);
 
-  // Exibe os preços dos primeiros 3 itens, caso existam
-  for (let i = 0; i < Math.min(3, results.length); i++) {
-    let priceElement = await results[i].findElement(By.css(".price"));
-    let price = await priceElement.getText();
-    console.log(i + ": " + price);
-  }
-}
+    // Processa os preços dos primeiros 3 itens usando Promise.allSettled
+    const prices = await Promise.allSettled(
+      results.slice(0, 3).map(async (result, index) => {
+        try {
+          const priceElement = await result.findElement(By.css('.price'));
+          const price = await priceElement.getText();
+          return { index, price };
+        } catch (error) {
+          return { index, error: 'Erro ao buscar preço' };
+        }
+      })
+    );
 
-async function main() {
-  let driver = await new Builder().forBrowser('chrome').build();
+    // Exibe os resultados dos preços
+    prices.forEach(({ status, value, reason }) => {
+      if (status === 'fulfilled') {
+        console.log(`Item ${value.index + 1}: ${value.price}`);
+      } else {
+        console.error(`Erro ao buscar o preço do item ${reason.index + 1}`);
+      }
+    });
 
-  try {
-    await loadHomePage(driver);
-    await locateSearchIcon(driver);
-    await performSearch(driver, 'aveia');
-    await validateSearchResults(driver);
-
-    // Adiciona um atraso de 5 segundos para observação
+    // Adiciona um atraso para observar o comportamento
     await new Promise(resolve => setTimeout(resolve, 5000));
   } catch (error) {
     console.error('Erro durante a execução do teste:', error);
   } finally {
+    // Finaliza o driver
     await driver.quit();
   }
 }
 
+// Executa a função principal
 main();
